@@ -13,3 +13,18 @@ venv/
 # Ignore IDE, Editor Files
 .idea/
 .vscode/
+
+# Environment Files
+.env
+.env.local
+
+# Temporary Files
+*.tmp
+*.log
+output.txt
+transcription.txt
+
+# Build Artifacts
+*.egg-info/
+build/
+dist/
