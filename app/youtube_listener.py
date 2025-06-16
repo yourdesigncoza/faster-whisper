@@ -89,7 +89,7 @@ class EnhancedYouTubeListener:
         model_size: str = "base",
         device: str = "cpu",
         compute_type: str = "int8",
-        output_file: str = "output.txt",
+        output_file: str = "/home/laudes/zoot/projects/faster-whisper/analysis_results/youtube/transcript.txt",
         chunk_duration: float = 30.0,
         language: Optional[str] = None,
         retry_config: Optional[RetryConfig] = None,
@@ -125,7 +125,7 @@ class EnhancedYouTubeListener:
             self.model_size = model_size if model_size != "base" else app_config.transcription.model_size
             self.device = device if device != "cpu" else app_config.transcription.device
             self.compute_type = compute_type if compute_type != "int8" else app_config.transcription.compute_type
-            self.output_file = Path(output_file if output_file != "output.txt" else app_config.output_file)
+            self.output_file = Path(output_file if output_file != "/home/laudes/zoot/projects/faster-whisper/analysis_results/youtube/transcript.txt" else app_config.output_file)
             self.chunk_duration = chunk_duration if chunk_duration != 30.0 else app_config.audio.chunk_duration
             self.language = language if language is not None else app_config.transcription.language
             self.retry_config = retry_config or RetryConfig(
@@ -839,7 +839,7 @@ Examples:
     parser.add_argument("--compute-type", default="int8",
                        choices=["int8", "float16", "float32"],
                        help="Compute type for inference")
-    parser.add_argument("--output", default="output.txt",
+    parser.add_argument("--output", default="/home/laudes/zoot/projects/faster-whisper/analysis_results/youtube/transcript.txt",
                        help="Output file path")
     parser.add_argument("--language", default=None,
                        help="Language code (e.g., 'en', 'es', 'fr')")

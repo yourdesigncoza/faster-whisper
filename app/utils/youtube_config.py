@@ -97,7 +97,7 @@ class YouTubeListenerConfig:
     def _load_config(self):
         """Load configuration from environment variables."""
         # Basic settings
-        self.output_file = os.getenv("YOUTUBE_OUTPUT_FILE", "output.txt")
+        self.output_file = os.getenv("YOUTUBE_OUTPUT_FILE", "/home/laudes/zoot/projects/faster-whisper/analysis_results/youtube/transcript.txt")
         self.log_level = os.getenv("YOUTUBE_LOG_LEVEL", "INFO")
         
         # Retry configuration
@@ -184,7 +184,7 @@ def create_sample_env_file(output_path: Optional[str] = None) -> str:
 # Copy this to .env and modify as needed
 
 # Basic Settings
-YOUTUBE_OUTPUT_FILE=output.txt
+YOUTUBE_OUTPUT_FILE=/home/laudes/zoot/projects/faster-whisper/analysis_results/youtube/transcript.txt
 YOUTUBE_LOG_LEVEL=INFO
 
 # Retry Configuration

@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "analysis_timestamp": "2025-06-16T16:42:18.072420",
+    "transcription_file": "/home/laudes/zoot/projects/faster-whisper/analysis_results/youtube/transcript.txt",
+    "statistics": {
+      "total_entries": 3,
+      "total_characters": 345,
+      "total_words": 67,
+      "time_span": "0:00:21",
+      "first_timestamp": "2025-06-16 16:38:51",
+      "last_timestamp": "2025-06-16 16:39:12",
+      "average_entry_length": 115.0
+    }
+  },
+  "summary": "The speaker discusses a trading strategy based on market indicators, noting a consistent decline in price represented by \"good red candles.\" They reference the moving average indicator, which suggests that the price is unlikely to rise again. Consequently, they have opened a short position and are awaiting its closure. The speaker expresses confidence in their trading decision, highlighting a successful entry point at 6000 and confirming that their trades are currently closed with a solid profit.",
+  "key_points": [
+    "The market is experiencing a downward trend, indicated by \"good red candles.\"",
+    "The moving average indicator shows a sharp decline in price with no signs of recovery.",
+    "A short position has been opened in response to the market conditions.",
+    "The speaker is awaiting the closure of the trade.",
+    "The trades are currently closed with a confident profit.",
+    "The entry point for the trade was at 6000.",
+    "The analysis suggests a bearish market outlook.",
+    "The speaker is monitoring the trade closely for potential outcomes.",
+    "The strategy appears to be based on technical indicators.",
+    "There is an emphasis on waiting for the trade to conclude before making further decisions."
+  ],
+  "sentiment": {
+    "sentiment": "negative",
+    "confidence": 0.85,
+    "key_emotions": [
+      "concern",
+      "caution",
+      "optimism"
+    ],
+    "explanation": "The content expresses a negative sentiment primarily due to the mention of \"good red candles\" indicating a downward trend in price, which suggests concern about market conditions. However, there is a sense of caution and a hint of optimism regarding the short position taken, as well as the mention of closing trades in profit, indicating some positive outcome despite the overall negative market sentiment. The confidence score reflects a strong indication of negative sentiment with some positive aspects."
+  }
+}

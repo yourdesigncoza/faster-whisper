@@ -35,7 +35,7 @@ class Config:
 
         # Load environment variables from .env file if available
         if DOTENV_AVAILABLE and Path(env_file).exists():
-            load_dotenv(env_file)
+            load_dotenv(env_file, override=True)
             print(f"✅ Loaded environment variables from {env_file}")
         elif Path(env_file).exists():
             print(f"⚠️  Found {env_file} but python-dotenv not available")
@@ -76,11 +76,19 @@ class Config:
     
     def get_transcription_path(self) -> Path:
         """Get the full path to the transcription file."""
-        return self.project_root / self.transcription_file
+        transcription_path = Path(self.transcription_file)
+        if transcription_path.is_absolute():
+            return transcription_path
+        else:
+            return self.project_root / self.transcription_file
     
     def get_analysis_output_dir(self) -> Path:
         """Get the full path to the analysis output directory."""
-        output_dir = self.project_root / self.analysis_output_dir
+        output_path = Path(self.analysis_output_dir)
+        if output_path.is_absolute():
+            output_dir = output_path
+        else:
+            output_dir = self.project_root / self.analysis_output_dir
         output_dir.mkdir(exist_ok=True)
         return output_dir
     
