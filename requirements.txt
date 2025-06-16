@@ -4,3 +4,25 @@ tokenizers>=0.13,<1
 onnxruntime>=1.14,<2 
 av>=11
 tqdm
+
+# Requirements for OpenAI Analysis Integration
+# Install with: pip install -r requirements_analysis.txt
+
+# OpenAI API client
+openai>=1.0.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Core dependencies (if not already installed)
+numpy>=1.21.0
+faster-whisper>=0.10.0
+
+# Optional: For enhanced JSON handling
+ujson>=5.0.0
+
+yt-dlp>=2023.7.6
+faster-whisper>=0.9.0
+numpy>=1.21.0
+
+transformers[torch]>=4.23
