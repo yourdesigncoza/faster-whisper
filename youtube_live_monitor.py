@@ -31,6 +31,7 @@ from app.youtube_listener import EnhancedYouTubeListener, RetryConfig
 from app.analysis.analyzer import TranscriptionAnalyzer
 from app.analysis.trading_intent_detector import TradingIntentDetector
 from app.utils.transcription_parser import TranscriptionEntry
+from app.send_telegram import send_trade_alert_from_intent, is_telegram_configured
 
 
 class TradingSignalDetector:
@@ -279,24 +280,27 @@ class YouTubeLiveMonitor:
         analysis_interval: float = 180.0,  # 3 minutes
         model_size: str = "small",
         max_retries: int = 10,
-        log_level: str = "DEBUG"
+        log_level: str = "DEBUG",
+        enable_telegram_alerts: bool = True
     ):
         """
         Initialize the YouTube live monitor.
-        
+
         Args:
             youtube_url: YouTube live stream URL
             analysis_interval: Seconds between analysis cycles (default 3 minutes)
             model_size: Whisper model size (default "small")
             max_retries: Maximum retry attempts (default 10)
             log_level: Logging level (default "DEBUG")
+            enable_telegram_alerts: Whether to send alerts to Telegram when trade intents are detected
         """
         self.youtube_url = youtube_url
         self.analysis_interval = analysis_interval
         self.model_size = model_size
         self.max_retries = max_retries
         self.log_level = log_level
-        
+        self.enable_telegram_alerts = enable_telegram_alerts
+
         # Setup logging
         self.logger = self._setup_logging()
         
@@ -514,6 +518,10 @@ class YouTubeLiveMonitor:
                 print(f"Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 print("="*60 + "\n")
 
+                # Send Telegram alert if enabled
+                if self.enable_telegram_alerts:
+                    self._send_telegram_alert(signal_analysis)
+
             else:
                 self.logger.debug(f"📉 No trading signals detected (strength: {signal_analysis['signal_strength']}/10)")
 
@@ -524,6 +532,27 @@ class YouTubeLiveMonitor:
 
         except Exception as e:
             self.logger.error(f"❌ Error logging analysis results: {e}")
+
+    def _send_telegram_alert(self, signal_analysis: Dict[str, Any]):
+        """Send trading signal alert to Telegram."""
+        try:
+            # Check if Telegram is configured before attempting to send
+            if not is_telegram_configured():
+                self.logger.warning("⚠️  Skipping Telegram alert - not configured properly")
+                return
+
+            self.logger.info("📤 Sending trade alert to Telegram...")
+
+            # Send the alert using the enhanced Telegram functionality
+            result = send_trade_alert_from_intent(signal_analysis)
+
+            self.logger.info("✅ Trade alert sent to Telegram successfully!")
+            self.logger.debug(f"Telegram response: {result}")
+
+        except Exception as e:
+            self.logger.error(f"❌ Failed to send Telegram alert: {e}")
+            self.logger.debug(f"Telegram alert error details: {traceback.format_exc()}")
+            # Don't raise the exception - we don't want Telegram failures to stop the monitor
 
     def _save_signal_analysis(self, analysis_result: Dict[str, Any]):
         """Save analysis results when trading signals are detected."""
@@ -551,6 +580,17 @@ class YouTubeLiveMonitor:
             self.logger.info(f"⏱️  Analysis interval: {self.analysis_interval}s")
             self.logger.info(f"🤖 Model: {self.model_size}, Max retries: {self.max_retries}")
             self.logger.info("💡 Monitor will analyze new content every 3 minutes for trading signals")
+
+            # Check Telegram configuration
+            if self.enable_telegram_alerts:
+                if is_telegram_configured():
+                    self.logger.info("📱 Telegram alerts: ENABLED and configured")
+                else:
+                    self.logger.warning("⚠️  Telegram alerts: ENABLED but not configured properly")
+                    self.logger.warning("   Please set TELEGRAM_TOKEN and TELEGRAM_CHAT_ID environment variables")
+            else:
+                self.logger.info("📱 Telegram alerts: DISABLED")
+
             self.logger.info("-" * 70)
 
             # Initialize components
@@ -651,6 +691,8 @@ Examples:
     parser.add_argument("--log-level", default="DEBUG",
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                        help="Logging level (default: DEBUG)")
+    parser.add_argument("--no-telegram", action="store_true",
+                       help="Disable Telegram alerts for trading signals")
 
     args = parser.parse_args()
 
@@ -679,7 +721,8 @@ Examples:
         analysis_interval=args.interval,
         model_size=args.model,
         max_retries=args.max_retries,
-        log_level=args.log_level
+        log_level=args.log_level,
+        enable_telegram_alerts=not args.no_telegram
     )
 
     try:

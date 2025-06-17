@@ -48,7 +48,13 @@ class Config:
         # OpenAI Configuration
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.openai_org_id = os.getenv("OPENAI_ORG_ID")
-        
+
+        # Telegram Configuration
+        self.telegram_token = os.getenv("TELEGRAM_TOKEN")
+        self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        self.telegram_enabled = os.getenv("TELEGRAM_ENABLED", "true").lower() == "true"
+        self.telegram_timeout = int(os.getenv("TELEGRAM_TIMEOUT", "10"))
+
         # Analysis Configuration
         self.default_model = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
         self.max_tokens = int(os.getenv("MAX_TOKENS", "2000"))
