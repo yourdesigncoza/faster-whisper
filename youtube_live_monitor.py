@@ -29,6 +29,7 @@ import traceback
 # Import existing components
 from app.youtube_listener import EnhancedYouTubeListener, RetryConfig
 from app.analysis.analyzer import TranscriptionAnalyzer
+from app.analysis.trading_intent_detector import TradingIntentDetector
 from app.utils.transcription_parser import TranscriptionEntry
 
 
@@ -148,12 +149,18 @@ class TradingSignalDetector:
 
 class IncrementalAnalysisTracker:
     """Tracks analysis progress and manages incremental content processing."""
-    
+
     def __init__(self, transcript_file: Path):
         self.transcript_file = transcript_file
         self.last_analyzed_position = 0
         self.last_analysis_time = None
         self.analysis_history = []
+        self.trading_context = {
+            "last_intent_detected": False,
+            "last_intent_time": None,
+            "recent_signals": [],
+            "market_sentiment": "neutral"
+        }
         self.logger = logging.getLogger(__name__)
     
     def get_new_content(self) -> Tuple[List[TranscriptionEntry], int]:
@@ -196,25 +203,71 @@ class IncrementalAnalysisTracker:
             "timestamp": datetime.datetime.now().isoformat(),
             "result": analysis_result
         })
-        
+
+        # Update trading context based on this analysis
+        self.update_trading_context(analysis_result)
+
         # Keep only last 10 analysis cycles for context
         if len(self.analysis_history) > 10:
             self.analysis_history = self.analysis_history[-10:]
     
     def get_context_summary(self) -> str:
-        """Get a summary of recent analysis for context."""
-        if not self.analysis_history:
-            return "No previous analysis context available."
-        
+        """Get a trading-focused summary of recent analysis for context."""
         context_parts = []
-        for i, entry in enumerate(self.analysis_history[-3:], 1):  # Last 3 analyses
-            result = entry["result"]
-            timestamp = entry["timestamp"]
-            
-            summary = result.get("summary", "No summary available")
-            context_parts.append(f"Analysis {i} ({timestamp}): {summary}")
-        
-        return "\n".join(context_parts)
+
+        # Add current trading context state
+        if self.trading_context["last_intent_detected"]:
+            context_parts.append(f"Previous intent detected at {self.trading_context['last_intent_time']}")
+        else:
+            context_parts.append("No recent trading intent detected")
+
+        # Add recent signal information
+        if self.trading_context["recent_signals"]:
+            recent_signals = self.trading_context["recent_signals"][-3:]  # Last 3 signals
+            context_parts.append(f"Recent signals: {', '.join(recent_signals)}")
+
+        # Add market sentiment
+        context_parts.append(f"Market sentiment: {self.trading_context['market_sentiment']}")
+
+        # Add brief summary from recent analyses
+        if self.analysis_history:
+            recent_analysis = self.analysis_history[-1]["result"]
+            if "trading_signals" in recent_analysis:
+                signals = recent_analysis["trading_signals"]
+                if signals.get("trading_intent_detected"):
+                    context_parts.append("Last analysis: Trading intent was detected")
+                else:
+                    context_parts.append("Last analysis: No trading intent detected")
+
+        return " | ".join(context_parts)
+
+    def update_trading_context(self, analysis_result: Dict[str, Any]):
+        """Update trading context based on analysis results."""
+        if "trading_signals" in analysis_result:
+            signals = analysis_result["trading_signals"]
+
+            # Update intent detection status
+            if signals.get("trading_intent_detected"):
+                self.trading_context["last_intent_detected"] = True
+                self.trading_context["last_intent_time"] = datetime.datetime.now().strftime("%H:%M:%S")
+
+                # Add to recent signals
+                if "intent_details" in signals:
+                    details = signals["intent_details"]
+                    signal_desc = f"{details.get('direction', 'unknown')} {details.get('instrument', 'position')}"
+                    self.trading_context["recent_signals"].append(signal_desc)
+
+                    # Keep only last 5 signals
+                    if len(self.trading_context["recent_signals"]) > 5:
+                        self.trading_context["recent_signals"] = self.trading_context["recent_signals"][-5:]
+            else:
+                self.trading_context["last_intent_detected"] = False
+
+            # Update market sentiment based on analysis
+            if "sentiment" in analysis_result:
+                sentiment = analysis_result["sentiment"]
+                if isinstance(sentiment, dict) and "overall_sentiment" in sentiment:
+                    self.trading_context["market_sentiment"] = sentiment["overall_sentiment"]
 
 
 class YouTubeLiveMonitor:
@@ -252,7 +305,8 @@ class YouTubeLiveMonitor:
         self.youtube_listener = None
         self.analyzer = None
         self.tracker = IncrementalAnalysisTracker(self.transcript_file)
-        self.signal_detector = TradingSignalDetector()
+        self.signal_detector = TradingSignalDetector()  # Keep old detector for comparison
+        self.intent_detector = None  # Will be initialized when analyzer is ready
         
         # Control flags
         self.is_running = False
@@ -314,6 +368,9 @@ class YouTubeLiveMonitor:
 
             # Initialize analyzer
             self.analyzer = TranscriptionAnalyzer(self.transcript_file)
+
+            # Initialize intent detector with the analyzer's OpenAI client
+            self.intent_detector = TradingIntentDetector(self.analyzer.openai_analyzer)
 
             self.logger.info("✅ Components initialized successfully")
 
@@ -400,15 +457,27 @@ class YouTubeLiveMonitor:
             analysis_result["entries_analyzed"] = len(new_entries)
             analysis_result["content_length"] = len(new_content_text)
 
-            # Detect trading signals
-            signal_analysis = self.signal_detector.analyze_for_trading_signals(analysis_result)
-            analysis_result["trading_signals"] = signal_analysis
+            # Detect trading signals using both methods for comparison
+            # Old keyword-based method
+            old_signal_analysis = self.signal_detector.analyze_for_trading_signals(analysis_result)
+
+            # New intent-focused method
+            intent = self.intent_detector.detect_intent(new_content_text, context)
+            new_signal_analysis = self.intent_detector.create_signal_analysis(intent)
+
+            # Use new method as primary, but log comparison
+            analysis_result["trading_signals"] = new_signal_analysis
+            analysis_result["trading_signals_comparison"] = {
+                "old_method": old_signal_analysis,
+                "new_method": new_signal_analysis,
+                "methods_agree": old_signal_analysis["trading_intent_detected"] == new_signal_analysis["trading_intent_detected"]
+            }
 
             # Log analysis results
-            self._log_analysis_results(analysis_result, signal_analysis)
+            self._log_analysis_results(analysis_result, new_signal_analysis)
 
             # Save analysis if trading signals detected
-            if signal_analysis["trading_intent_detected"]:
+            if new_signal_analysis["trading_intent_detected"]:
                 self._save_signal_analysis(analysis_result)
 
             # Update tracker
